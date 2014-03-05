@@ -47,9 +47,25 @@ trait IteratorFilter
     /**
      * Callable function to filter the iterator
      *
-     * @var callable
+     * @var array
      */
-    private $filter;
+    private $filter = [];
+
+    /**
+     * Set the Iterator filter method
+     *
+     * DEPRECATION WARNING! This method will be removed in the next major point release
+     *
+     * @deprecated deprecated since version 5.1
+     *
+     * @param callable $filter
+     *
+     * @return self
+     */
+    public function setFilter(callable $filter)
+    {
+        return $this->addFilter($filter);
+    }
 
     /**
      * Set the Iterator filter method
@@ -58,9 +74,26 @@ trait IteratorFilter
      *
      * @return self
      */
-    public function setFilter(callable $filter)
+    public function addFilter(callable $filter)
     {
-        $this->filter = $filter;
+        $this->filter[] = $filter;
+
+        return $this;
+    }
+
+    /**
+     * Remove a filter from the callable collection
+     *
+     * @param callable $filter
+     *
+     * @return self
+     */
+    public function removeFilter(callable $filter)
+    {
+        $res = array_search($filter, $this->filter, true);
+        if (false !== $res) {
+            unset($this->filter[$res]);
+        }
 
         return $this;
     }
@@ -70,15 +103,14 @@ trait IteratorFilter
     *
     * @param \Iterator $iterator
     *
-    * @return \CallbackFilterIterator
+    * @return \Iterator
     */
     protected function applyFilter(Iterator $iterator)
     {
-        if (! $this->filter) {
-            return $iterator;
+        foreach ($this->filter as $callable) {
+            $iterator = new CallbackFilterIterator($iterator, $callable);
         }
-        $iterator = new CallbackFilterIterator($iterator, $this->filter);
-        $this->filter = null;
+        $this->filter = [];
 
         return $iterator;
     }
